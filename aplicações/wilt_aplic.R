@@ -1,0 +1,298 @@
+library(rstan)
+options(mc.cores = 7)
+library(loo)
+
+source('funcoes_aplicacao.R')
+
+####################################################################################
+########### Wilt Dataset ##########################################################
+###################################################################################
+#https://archive.ics.uci.edu/ml/datasets/Wilt
+df <- read.csv( "/home/notmyname/Downloads/wilt/testing.csv",header = T, sep = ",")
+str(df)
+
+table(df$class)
+
+summary(df)
+
+apply(df,2,max)
+apply(df[,-1],2,mean) 
+library(corrplot)
+
+corrplot(cor(df[,-1]), is.corr = FALSE, method = 'color', col.lim = c(-1, 1),, col = colorRampPalette(c("blue","white","firebrick3"))(200), addCoef.col = 'grey30')
+
+Y = ifelse(df$class == "w",1,0)
+table(Y)
+
+library(ggplot2)
+tbl <- with(df, prop.table(table(Y)))
+ggplot(as.data.frame(tbl), aes(factor(Y), Freq )) +
+  scale_y_continuous(labels=scales::percent)+
+  geom_col(position = 'dodge')+ theme_bw()+ylab("Porcentagem")+xlab("")
+
+
+cor(df[,-1])
+X = scale(df[,-c(1,3)])
+names(df)
+### Double Lomax
+model_dlomax <- stan_model('dlomax.stan')
+fit_dlomax <- sampling(model_dlomax, list(n = length(Y), y=Y, X = as.matrix(X), k = ncol(X)), iter = 5000, chains = 4, seed =1)
+log_lik_1 <- extract_log_lik(fit_dlomax)
+loo(log_lik_1)$looic 
+waic(log_lik_1)$waic 
+
+postSamples <- Reduce(cbind, extract(fit_dlomax, pars=c("beta0", "beta")))
+dic(model.matrix(~X), Y, loglike_dlomax, postSamples)
+eaic(model.matrix(~X), Y, loglike_dlomax, postSamples)
+ebic(model.matrix(~X), Y, loglike_dlomax, postSamples)
+
+### Reverse Power Lomax
+model_rplomax <- stan_model('drplomax.stan')
+fit_rplomax <- sampling(model_rplomax, list(n = length(Y), y=Y, X = as.matrix(X), k = ncol(X)), iter = 5000, chains = 4, seed =1)
+log_lik_1 <- extract_log_lik(fit_rplomax)
+loo(log_lik_1)$looic
+waic(log_lik_1)$waic  
+
+postSamples <- Reduce(cbind, extract(fit_rplomax, pars=c("beta0", "beta", "loglambda")))
+dic(model.matrix(~X), Y, loglike_dpinvlomax, postSamples)
+eaic(model.matrix(~X), Y, loglike_dpinvlomax, postSamples)
+ebic(model.matrix(~X), Y, loglike_dpinvlomax, postSamples)
+
+### Power Lomax
+model_plomax <- stan_model('dplomax.stan')
+fit_plomax <- sampling(model_plomax, list(n = length(Y), y=Y, X = as.matrix(X), k = ncol(X)), iter = 5000, chains = 4, seed =1)
+log_lik_1 <- extract_log_lik(fit_plomax)
+loo(log_lik_1)$looic
+waic(log_lik_1)$waic 
+
+postSamples <- Reduce(cbind, extract(fit_plomax, pars=c("beta0", "beta", "loglambda")))
+dic(model.matrix(~X), Y, loglike_dplomax, postSamples)
+eaic(model.matrix(~X), Y, loglike_dplomax, postSamples)
+ebic(model.matrix(~X), Y, loglike_dplomax, postSamples)
+
+### Logistica 
+model_logistic <- stan_model('dlogistic.stan')
+fit_logistic <- sampling(model_logistic, list(n = length(Y), y=Y, X = as.matrix(X), k = ncol(X)), iter = 5000, chains = 4, seed =1)
+log_lik_1 <- extract_log_lik(fit_logistic)
+loo(log_lik_1)$looic
+waic(log_lik_1)$waic 
+
+postSamples <- Reduce(cbind, extract(fit_logistic, pars=c("beta0", "beta")))
+dic(model.matrix(~X), Y, loglike_log, postSamples)
+eaic(model.matrix(~X), Y, loglike_log, postSamples)
+ebic(model.matrix(~X), Y, loglike_log, postSamples)
+
+### Cloglog
+model_cloglog <- stan_model('dcloglog.stan')
+fit_cloglog <- sampling(model_cloglog, list(n = length(Y), y=Y, X = as.matrix(X), k = ncol(X)), iter = 5000, chains = 4, seed =1)
+log_lik_1 <- extract_log_lik(fit_cloglog)
+loo(log_lik_1)$looic
+waic(log_lik_1)$waic 
+
+postSamples <- Reduce(cbind, extract(fit_cloglog, pars=c("beta0", "beta")))
+dic(model.matrix(~X), Y, loglike_cloglog, postSamples)
+eaic(model.matrix(~X), Y, loglike_cloglog, postSamples)
+ebic(model.matrix(~X), Y, loglike_cloglog, postSamples)
+
+### Loglog
+model_loglog <- stan_model('loglog.stan')
+fit_loglog <- sampling(model_loglog, list(n = length(Y), y=Y, X = as.matrix(X), k = ncol(X)), iter = 5000, chains = 4, seed =1)
+log_lik_1 <- extract_log_lik(fit_loglog)
+loo(log_lik_1)$looic
+waic(log_lik_1)$waic 
+
+postSamples <- Reduce(cbind, extract(fit_loglog, pars=c("beta0", "beta")))
+dic(model.matrix(~X), Y, loglike_loglog, postSamples)
+eaic(model.matrix(~X), Y, loglike_loglog, postSamples)
+ebic(model.matrix(~X), Y, loglike_loglog, postSamples)
+
+### Probit
+model_probit <- stan_model('probit.stan')
+fit_probit <- sampling(model_probit, list(n = length(Y), y=Y, X = as.matrix(X), k = ncol(X)), iter = 5000, chains = 4, seed =1)
+log_lik_1 <- extract_log_lik(fit_probit)
+loo(log_lik_1)$looic
+waic(log_lik_1)$waic
+
+postSamples <- Reduce(cbind, extract(fit_probit, pars=c("beta0", "beta")))
+dic(model.matrix(~X), Y, loglike_probit, postSamples)
+eaic(model.matrix(~X), Y, loglike_probit, postSamples)
+ebic(model.matrix(~X), Y, loglike_probit, postSamples)
+
+### Cauchit
+model_cauchit <- stan_model('cauchit.stan')
+fit_cauchit <- sampling(model_cauchit, list(n = length(Y), y=Y, X = as.matrix(X), k = ncol(X)), iter = 5000, chains = 4, seed =1)
+log_lik_1 <- extract_log_lik(fit_cauchit)
+loo(log_lik_1)$looic
+waic(log_lik_1)$waic 
+
+postSamples <- Reduce(cbind, extract(fit_cauchit, pars=c("beta0", "beta")))
+dic(model.matrix(~X), Y, loglike_cauchit, postSamples)
+eaic(model.matrix(~X), Y, loglike_cauchit, postSamples)
+ebic(model.matrix(~X), Y, loglike_cauchit, postSamples)
+
+## tabela
+modelos = list(fit_dlomax, fit_rplomax, fit_plomax, fit_logistic, fit_cloglog, fit_loglog, fit_probit,fit_cauchit)
+loglikes = list(loglike_dlomax,  loglike_dpinvlomax, loglike_dplomax, loglike_log, loglike_cloglog, loglike_loglog,loglike_probit, loglike_cauchit )
+medidas = data.frame(matrix(ncol = 9,nrow = length(modelos)))
+colnames(medidas) = c("dist", "rho", "dbar", "dhat", "dic", "eaic", "ebic", "loo", "waic")
+
+
+
+for(i in 1:length(modelos)){
+  
+  log_lik_1 <- extract_log_lik(modelos[[i]])
+  medidas[i,"loo"] = loo(log_lik_1)$looic
+  medidas[i,"waic"] = waic(log_lik_1)$waic 
+  
+  if(i %in% c(2,3)){
+    postSamples <- Reduce(cbind, extract(modelos[[i]], pars=c("beta0", "beta", "loglambda")))
+  }else{
+    postSamples <- Reduce(cbind, extract(modelos[[i]], pars=c("beta0", "beta")))
+  }
+  
+  dicc = dic(model.matrix(~X), Y, loglikes[[i]], postSamples)
+  
+  medidas[i,"dbar"] = dicc$dbar
+  medidas[i,"dhat"] = dicc$dhat
+  medidas[i,"rho"] = dicc$rho
+  medidas[i,"dic"] = dicc$dic
+  medidas[i,"eaic"] = eaic(model.matrix(~X), Y, loglikes[[i]], postSamples)
+  medidas[i,"ebic"] = ebic(model.matrix(~X), Y, loglikes[[i]], postSamples)
+}
+library(xtable)
+xtable(round(medidas[,-1],3), row.names = F, digits=3) 
+
+### valor dos parametros 
+
+modelos = list(fit_dlomax, fit_rplomax, fit_plomax, fit_logistic, fit_cloglog, fit_loglog, fit_probit,fit_cauchit)
+parametros = data.frame(matrix(ncol = 8,nrow = length(modelos)))
+colnames(parametros) = c("dist", "beta0", "beta1", "beta2", "beta3", "beta4", "loglambda", "lambda")
+
+
+for (i in 1:length(modelos)){
+  parametros[i, "beta0"] = median(extract(modelos[[i]], permuted = TRUE)$beta0)
+  parametros[i, "beta1"] = median(extract(modelos[[i]], permuted = TRUE)$beta[,1])
+  parametros[i, "beta2"] = median(extract(modelos[[i]], permuted = TRUE)$beta[,2])
+  parametros[i, "beta3"] = median(extract(modelos[[i]], permuted = TRUE)$beta[,3])
+  parametros[i, "beta4"] = median(extract(modelos[[i]], permuted = TRUE)$beta[,4])
+  if(i %in% c(2,3)){
+    parametros[i, "loglambda"] = median(extract(modelos[[i]], permuted = TRUE)$loglambda)
+    parametros[i, "lambda"] = exp(parametros[i, "loglambda"])
+  }
+}
+
+print(round(parametros[,-c(1,7)],3), row.names = F) 
+xtable(round(parametros[,-c(1,7)],3), row.names = F, digits=3) 
+
+
+rplomaxx <- extract(fit_rplomax,permuted = T)
+
+par1 <- data.frame(matrix(ncol = 5))
+names(par1) <- c("par", "mean", "sd", "median", "25", "97.5")
+
+par1[1,1] <- mean(rplomaxx$beta0)
+par1[1,2] <-sd(rplomaxx$beta0)
+par1[1,3] <-median(rplomaxx$beta0)
+par1[1,4:5] <- quantile(rplomaxx$beta0, c(0.25, 0.975))
+
+par1[2:5,1] <-apply(rplomaxx$beta, 2, mean)
+par1[2:5,2] <-apply(rplomaxx$beta, 2, sd)
+par1[2:5,3] <-apply(rplomaxx$beta, 2, median)
+par1[2:5,4:5] <-t(apply(rplomaxx$beta, 2, quantile, c(0.25, 0.975)))
+
+
+par1[6,1] <-mean(exp(rplomaxx$loglambda))
+par1[6,2] <- sd(exp(rplomaxx$loglambda))
+par1[6,3] <-median(exp(rplomaxx$loglambda))
+par1[6,4:5] <-quantile(exp(rplomaxx$loglambda), c(0.25, 0.975))
+xtable(par1, digits = 3)
+
+
+#########################################################################3
+#### Análise Preditiva #####################################################
+######################################################################
+library(pROC)
+library("cutpointr")
+library(caret)
+
+loglog <- function(x){exp(-exp(-x))}
+cloglog <- function(x){1-exp(-exp(x))}
+
+med_pred = data.frame(matrix(ncol = 7,nrow = length(modelos)))
+names(med_pred) = c("cp","AUC", "Acuracia", "Precisao", "F1", "SENS", "ESP")
+probabilidades <- list(F_dlomax, Finvplomax, Fplomax, plogis, cloglog, loglog, pnorm, pcauchy)
+
+for (i in 1:nrow(parametros)){
+  xbeta <- model.matrix(~X) %*% as.numeric(parametros[i,2:6],nrow=1)
+  
+  if(i %in% c(2,3)){
+    prob <- sapply(xbeta, probabilidades[[i]],  loglambda = parametros[i,7])
+  }else{
+    prob <- sapply(xbeta, probabilidades[[i]])
+  }
+  
+  
+  cp <- 0.5
+  
+  med_pred[i,"cp"] <- cp
+  prediction <- ifelse(prob>cp, 1,0)
+  
+  roc_obj <- pROC::roc(Y,prediction)
+  
+  med_pred[i,"AUC"] = pROC::auc(roc_obj)
+  
+  
+  xtab <- table(prediction, Y)
+  
+  cm <- confusionMatrix(xtab, mode = "everything", positive = "1")
+  
+  if(i ==1){
+    confusion <- xtab
+  }else{
+    confusion <- rbind(confusion,xtab) 
+  }
+  
+  med_pred[i,"Acuracia"] <- cm$overall['Accuracy']
+  med_pred[i, c("Precisao", "F1", "SENS", "ESP")] <- cm$byClass[c("Precision", "F1","Sensitivity","Specificity" )]
+}
+library(xtable) 
+xtable(round(med_pred,3), row.names = F, digits = 3)
+xtable(confusion)
+############################################################################
+### Residuals ##########################################################
+##########################################################################
+xbeta <- model.matrix(~X) %*% as.numeric(parametros[2,2:6],nrow=1)
+
+prob <- Finvplomax(xbeta, parametros[2,7])
+
+
+set.seed(1)
+a <- pbinom(Y-1, 1, prob) 
+b <- pbinom(Y, 1, prob)
+res <- qnorm(runif(length(a),a, b))
+plot(res)
+qqnorm(res, pch = 1, frame = FALSE)
+qqline(res, col = "steelblue", lwd = 2)
+hist(res)
+
+require(qqplotr)
+ggplot(data = data.frame(res), mapping = aes(sample = res)) +
+  stat_qq_band() +
+  stat_qq_line() +
+  stat_qq_point() +
+  labs(x = "Quantis Teóricos", y = "Resíduos Quantílicos")+theme_bw()
+ggsave(path = '/home/notmyname/Desktop/mestrado/imagens', filename = "QQplot2.png", width = 6, height = 4)
+
+ggplot(data = data.frame(res), aes(x = res)) +
+  geom_histogram(colour="black", fill="white", bins =15) +
+  labs(x = "Frequência", y = "Resíduos Quantílicos")+theme_bw()
+ggsave(path = '/home/notmyname/Desktop/mestrado/imagens', filename = "histres2.png", width = 11, height = 7)
+
+data = data.frame("res" = res, "index" = 1:length(res))
+ggplot(data = data, aes(x = index, y = res)) +
+  geom_point(size = 2) +
+  labs(x = "Index", y = "Resíduos Quantílicos")+theme_bw()
+ggsave(path = '/home/notmyname/Desktop/mestrado/imagens', filename = "res2.png", width = 11, height = 7)
+
+
+
