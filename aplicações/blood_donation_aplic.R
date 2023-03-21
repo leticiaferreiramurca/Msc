@@ -186,23 +186,23 @@ xtable(round(parametros,3), row.names = F, digits = 3)
 rplomaxx <- extract(fit_rplomax,permuted = T)
 
 par1 <- data.frame(matrix(ncol = 5))
-names(par1) <- c("par", "mean", "sd", "median", "25", "97.5")
+names(par1) <- c("par", "mean", "sd", "median", "5", "95")
 
 par1[1,1] <- mean(rplomaxx$beta0)
 par1[1,2] <-sd(rplomaxx$beta0)
 par1[1,3] <-median(rplomaxx$beta0)
-par1[1,4:5] <- quantile(rplomaxx$beta0, c(0.25, 0.975))
+par1[1,4:5] <- quantile(rplomaxx$beta0, c(0.05, 0.95))
 
 par1[2:4,1] <-apply(rplomaxx$beta, 2, mean)
 par1[2:4,2] <-apply(rplomaxx$beta, 2, sd)
 par1[2:4,3] <-apply(rplomaxx$beta, 2, median)
-par1[2:4,4:5] <-t(apply(rplomaxx$beta, 2, quantile, c(0.25, 0.975)))
+par1[2:4,4:5] <-t(apply(rplomaxx$beta, 2, quantile, c(0.05, 0.95)))
 
 
-par1[5,1] <-mean((rplomaxx$loglambda))
+par1[5,1] <-mean(exp(rplomaxx$loglambda))
 par1[5,2] <- sd(exp(rplomaxx$loglambda))
 par1[5,3] <-median(exp(rplomaxx$loglambda))
-par1[5,4:5] <-quantile(exp(rplomaxx$loglambda), c(0.25, 0.975))
+par1[5,4:5] <-quantile(exp(rplomaxx$loglambda), c(0.05, 0.95))
 xtable(par1, digits = 3)
 
 #########################################################################3
