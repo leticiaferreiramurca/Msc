@@ -1,2 +1,2 @@
-# mestrado
-códigos utilizados no mestrado
+# Msc
+Codes used to write my dissertation.
